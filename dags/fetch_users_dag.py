@@ -45,43 +45,31 @@ def fetch_all_users_and_data_dag():
         except requests.exceptions.RequestException as e:
             raise AirflowException(f"API request failed: {str(e)}")
 
-    def create_docker_task(user):
-        """Create DockerOperator task for each user"""
-        user_json = json.dumps(user, ensure_ascii=False)
-        
+    def _create_docker_task(user):
+        """Helper function to create DockerOperator instance"""
         return DockerOperator(
-            task_id=f"process_user_{user['email'].split('@')[0]}",
-            image="fetch_users:latest",  # Должно совпадать с именем при сборке
+            task_id=f"process_user_{user['email'].replace('@', '_at_')}",
+            image="fetch_users:latest",
             api_version='auto',
             auto_remove=True,
             docker_url="unix://var/run/docker.sock",
             network_mode="host",
-            command=["--user-json", user_json],  # Аргументы для ENTRYPOINT
+            command=["--user-json", json.dumps(user, ensure_ascii=False)],
             environment={
                 "AIRFLOW_UID": os.getenv("AIRFLOW_UID", "0"),
                 "PYTHONUNBUFFERED": "1"
             },
-            mounts=[
-                # Добавьте монтирование при необходимости
-                # Mount(source="/host/path", target="/container/path", type="bind")
-            ],
-            retrieve_output=True,
-            retrieve_output_path="/tmp/airflow/"
+            mounts=[],
+            retrieve_output=True
         )
 
     @task
-    def process_users(users):
-        """Process all users in parallel"""
-        from airflow.operators.python import get_current_context
-        context = get_current_context()
-        
-        for user in users:
-            task = create_docker_task(user)
-            task.execute(context)
+    def process_user(user: dict):
+        """Wrapper task for Docker operator"""
+        return _create_docker_task(user).execute({})
 
-    # Структура DAG
+    # DAG structure
     users = fetch_users()
-    process_users(users)
+    process_user.expand(user=users)
 
-# Инициализация DAG
 dag_instance = fetch_all_users_and_data_dag()
