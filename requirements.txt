@@ -1,0 +1,3 @@
+pydantic
+pydantic-settings
+pydantic_core
