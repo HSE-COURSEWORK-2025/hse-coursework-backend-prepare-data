@@ -1,7 +1,14 @@
 FROM python:3.12-bookworm
 
+# Устанавливаем рабочую директорию
 WORKDIR /fetch-users
-COPY ./requirements.txt /fetch-users/requirements.txt
-RUN pip install --no-cache-dir --upgrade -r /fetch-users/requirements.txt
-COPY ./ /fetch-users
-COPY airflow.cfg /fetch-users/airflow.cfg
+
+# Копируем зависимости и устанавливаем
+COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade -r requirements.txt
+
+# Копируем весь проект
+COPY . .
+
+# Указываем точку входа
+ENTRYPOINT ["python3", "run.py"]

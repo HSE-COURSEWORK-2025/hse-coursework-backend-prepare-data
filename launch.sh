@@ -5,7 +5,7 @@ echo "🔻 Останавливаем контейнеры"
 docker compose down
 
 echo "🗑️  Удаляем данные"
-rm -rf docker_data
+sudo rm -rf docker_data
 
 echo "📄 Проверяем .env"
 if [ ! -f .env ]; then

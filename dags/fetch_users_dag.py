@@ -5,8 +5,8 @@ import json
 import requests
 from datetime import datetime, timedelta
 from airflow.decorators import dag, task
-from docker import DockerClient
-from docker.errors import DockerException
+from airflow.providers.docker.operators.docker import DockerOperator
+from docker.types import Mount
 from airflow.exceptions import AirflowException
 
 AUTH_API_URL = "http://192.168.0.131:8081"
@@ -45,50 +45,43 @@ def fetch_all_users_and_data_dag():
         except requests.exceptions.RequestException as e:
             raise AirflowException(f"API request failed: {str(e)}")
 
-    @task(retries=2)
-    def process_user(user: dict):
-        """Process individual user using Docker container"""
-        client = DockerClient(base_url='unix://var/run/docker.sock')
-        user_json = json.dumps(user)
+    def create_docker_task(user):
+        """Create DockerOperator task for each user"""
+        user_json = json.dumps(user, ensure_ascii=False)
         
-        try:
-            container = client.containers.run(
-                image="fetch_user_data:latest",
-                command=["python3", "run.py", "--user-json", user_json],
-                auto_remove=True,
-                network_mode="host",
-                environment={
-                    "AIRFLOW_UID": os.getenv("AIRFLOW_UID", "0"),
-                    "PYTHONUNBUFFERED": "1"
-                },
-                mounts=[
-                    # Add mounts here if needed
-                    # Mount(source="/host/path", target="/container/path", type="bind")
-                ],
-                detach=True
-            )
+        return DockerOperator(
+            task_id=f"process_user_{user['email'].split('@')[0]}",
+            image="fetch_users:latest",  # Должно совпадать с именем при сборке
+            api_version='auto',
+            auto_remove=True,
+            docker_url="unix://var/run/docker.sock",
+            network_mode="host",
+            command=["--user-json", user_json],  # Аргументы для ENTRYPOINT
+            environment={
+                "AIRFLOW_UID": os.getenv("AIRFLOW_UID", "0"),
+                "PYTHONUNBUFFERED": "1"
+            },
+            mounts=[
+                # Добавьте монтирование при необходимости
+                # Mount(source="/host/path", target="/container/path", type="bind")
+            ],
+            retrieve_output=True,
+            retrieve_output_path="/tmp/airflow/"
+        )
 
-            # Stream container logs to Airflow task logs
-            for line in container.logs(stream=True, follow=True):
-                print(line.strip().decode('utf-8'))
+    @task
+    def process_users(users):
+        """Process all users in parallel"""
+        from airflow.operators.python import get_current_context
+        context = get_current_context()
+        
+        for user in users:
+            task = create_docker_task(user)
+            task.execute(context)
 
-            exit_code = container.wait()['StatusCode']
-            if exit_code != 0:
-                raise AirflowException(f"Container failed with exit code {exit_code}")
-
-        except DockerException as e:
-            raise AirflowException(f"Docker operation failed: {str(e)}")
-        finally:
-            try:
-                container.remove(force=True)
-            except:
-                pass
-
-        return f"Successfully processed user {user.get('email', 'unknown')}"
-
-    # DAG structure
+    # Структура DAG
     users = fetch_users()
-    process_user.expand(user=users)
+    process_users(users)
 
-# Instantiate the DAG
+# Инициализация DAG
 dag_instance = fetch_all_users_and_data_dag()
