@@ -10,6 +10,20 @@ from settings import Settings
 settings = Settings()
 
 
+def convert_nanoseconds_to_utc(timestamp_ns):
+    # Переводим наносекунды в секунды (с дробной частью)
+    timestamp_sec = timestamp_ns / 1_000_000_000.0
+    
+    # Создаём datetime объект
+    dt = datetime.datetime.utcfromtimestamp(timestamp_sec)
+    
+    # Извлекаем наносекунды из исходного значения
+    nanoseconds = int(timestamp_ns % 1_000_000_000)
+    
+    # Форматируем дату с наносекундами (первые 6 цифр → микросекунды)
+    return dt.strftime("%d %B %Y %H:%M:%S") + f".{nanoseconds:09d}"[:10] + " UTC"
+
+
 def load_user(user_json: str) -> dict:
     """Загружает объект пользователя из JSON-строки или файла."""
     try:
@@ -37,7 +51,7 @@ def fetch_fitness_data(token: str, data_type: str, start_ms: int, end_ms: int) -
     """POST к Google Fitness API для конкретного dataTypeName."""
     body = {
         "aggregateBy": [{"dataTypeName": data_type}],
-        "bucketByTime": {"durationMillis": 24 * 60 * 60 * 1000},
+        # "bucketByTime": {"durationMillis": 24 * 60 * 60 * 1000},
         "startTimeMillis": start_ms,
         "endTimeMillis": end_ms
     }
@@ -59,7 +73,59 @@ def fetch_full_period(token: str, data_type: str, start_ms: int, end_ms: int):
         readable_end = datetime.datetime.fromtimestamp(current_end / 1000).strftime('%Y-%m-%d %H:%M:%S')
         try:
             data = fetch_fitness_data(token, data_type, current_start, current_end)
-            print(f"— {data_type} [{readable_start} - {readable_end}]: {len(data.get('bucket', []))} записей")
+            
+            if data_type in ['com.google.oxygen_saturation', 'com.google.heart_rate.bpm']:
+                buckets = data.get('bucket', [])
+                for bucket in buckets:
+                    dataset = bucket.get('dataset', [])
+                    for data in dataset:
+                        points = data.get('point', [])
+                        for point in points:
+                            point_time_nanos = point.get('startTimeNanos')
+                            point_time = convert_nanoseconds_to_utc(int(point_time_nanos))
+                            point_value = None
+                            values = point.get('value', [])
+                            if values:
+                                point_value = values[0].get('fpVal')
+                                print(point_value, point_time)
+            
+            
+            elif data_type in [
+            "com.google.activity.segment",
+            "com.google.calories.bmr",
+            "com.google.calories.expended",
+            "com.google.cycling.pedaling.cadence",
+            "com.google.cycling.pedaling.cumulative",
+            "com.google.heart_minutes",
+            "com.google.active_minutes",
+            "com.google.power.sample",
+            "com.google.step_count.cadence",
+            "com.google.step_count.delta",
+            "com.google.activity.exercise",
+            "com.google.sleep.segment"
+        ]:
+                buckets = data.get('bucket', [])
+                for bucket in buckets:
+                    dataset = bucket.get('dataset', [])
+                    for data in dataset:
+                        points = data.get('point', [])
+                        for point in points:
+                            point_time_nanos = point.get('startTimeNanos')
+                            point_time = convert_nanoseconds_to_utc(int(point_time_nanos))
+                            point_value = None
+                            values = point.get('value', [])
+                            if values:
+                                point_value = values[0].get('intVal')
+                                if point_value:
+                                    print(point_value, point_time)
+                
+
+            else:
+                
+                with open('testek2.json', 'w') as f:
+                    f.write(str(data))
+                    
+            # print(f"— {data_type} [{readable_start} - {readable_end}]: {len(data.get('bucket', []))} записей")
         except requests.HTTPError as e:
             print(f"Ошибка запроса {data_type} [{readable_start} - {readable_end}]: {e}", file=sys.stderr)
         current_start = current_end
@@ -80,7 +146,7 @@ def main():
     if not token:
         sys.exit(1)
 
-    start_ms = 0  # с 1 января 1970
+    start_ms = int((time.time() - 14 * 24 * 60 * 60) * 1000)
     end_ms = int(time.time() * 1000)
 
     for scope in settings.SCOPES:
