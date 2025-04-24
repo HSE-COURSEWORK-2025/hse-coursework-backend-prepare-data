@@ -13,33 +13,31 @@ class Settings(BaseSettings):
         "https://www.googleapis.com/fitness/v1/users/me/dataset:aggregate"
     )
 
-    # SCOPES: List[str] | None = [
-    #     "https://www.googleapis.com/auth/fitness.activity.read",
-    #     "https://www.googleapis.com/auth/fitness.blood_glucose.read",
-    #     "https://www.googleapis.com/auth/fitness.blood_pressure.read",
-    #     "https://www.googleapis.com/auth/fitness.body.read",
-    #     "https://www.googleapis.com/auth/fitness.body_temperature.read",
-    #     "https://www.googleapis.com/auth/fitness.heart_rate.read",
-    #     "https://www.googleapis.com/auth/fitness.location.read",
-    #     "https://www.googleapis.com/auth/fitness.nutrition.read",
-    #     "https://www.googleapis.com/auth/fitness.oxygen_saturation.read",
-    #     "https://www.googleapis.com/auth/fitness.reproductive_health.read",
-    #     "https://www.googleapis.com/auth/fitness.sleep.read",
-    # ]
-
     SCOPES: List[str] | None = [
-        # "https://www.googleapis.com/auth/fitness.activity.read",
-        # "https://www.googleapis.com/auth/fitness.blood_glucose.read",
-        # "https://www.googleapis.com/auth/fitness.blood_pressure.read",
-        # "https://www.googleapis.com/auth/fitness.body.read",
-        # "https://www.googleapis.com/auth/fitness.body_temperature.read",
-        # "https://www.googleapis.com/auth/fitness.heart_rate.read",
-        # "https://www.googleapis.com/auth/fitness.location.read",
-        # "https://www.googleapis.com/auth/fitness.nutrition.read",
-        # "https://www.googleapis.com/auth/fitness.oxygen_saturation.read",
-        # "https://www.googleapis.com/auth/fitness.reproductive_health.read",
+        "https://www.googleapis.com/auth/fitness.activity.read",
+        "https://www.googleapis.com/auth/fitness.blood_glucose.read",
+        "https://www.googleapis.com/auth/fitness.blood_pressure.read",
+        "https://www.googleapis.com/auth/fitness.body.read",
+        "https://www.googleapis.com/auth/fitness.body_temperature.read",
+        "https://www.googleapis.com/auth/fitness.heart_rate.read",
+        "https://www.googleapis.com/auth/fitness.nutrition.read",
+        "https://www.googleapis.com/auth/fitness.oxygen_saturation.read",
+        "https://www.googleapis.com/auth/fitness.reproductive_health.read",
         "https://www.googleapis.com/auth/fitness.sleep.read",
     ]
+
+    # SCOPES: List[str] | None = [
+    #     # "https://www.googleapis.com/auth/fitness.activity.read",
+    #     # "https://www.googleapis.com/auth/fitness.blood_glucose.read",
+    #     # "https://www.googleapis.com/auth/fitness.blood_pressure.read",
+    #     # "https://www.googleapis.com/auth/fitness.body.read",
+    #     # "https://www.googleapis.com/auth/fitness.body_temperature.read",
+    #     # "https://www.googleapis.com/auth/fitness.heart_rate.read",
+    #     # "https://www.googleapis.com/auth/fitness.nutrition.read",
+    #     # "https://www.googleapis.com/auth/fitness.oxygen_saturation.read",
+    #     # "https://www.googleapis.com/auth/fitness.reproductive_health.read",
+    #     "https://www.googleapis.com/auth/fitness.sleep.read",
+    # ]
 
     DATA_TYPES_BY_SCOPE: Dict[str, List[str]] | None = {
         "https://www.googleapis.com/auth/fitness.activity.read": [
@@ -72,9 +70,6 @@ class Settings(BaseSettings):
         "https://www.googleapis.com/auth/fitness.heart_rate.read": [
             "com.google.heart_rate.bpm"
         ],
-        "https://www.googleapis.com/auth/fitness.location.read": [
-            "com.google.location.sample"
-        ],
         "https://www.googleapis.com/auth/fitness.nutrition.read": [
             "com.google.hydration",
             "com.google.nutrition",
@@ -97,8 +92,8 @@ class Settings(BaseSettings):
     REDIS_PORT: str | None = "6379"
     REDIS_DATA_COLLECTION_PROGRESS_BAR_NAMESPACE: str | None = "DATA_COLLECTION_PROGRESS_BAR_NAMESPACE-"
 
-    # START_MS: int | None = int((time.time() - 60 * 24 * 60 * 60) * 1000)
-    START_MS: int | None = 0
+    START_MS: int | None = int((time.time() - 360 * 24 * 60 * 60) * 1000)
+    # START_MS: int | None = 0
     END_MS: int | None = int(time.time() * 1000)
 
     model_config = SettingsConfigDict(
