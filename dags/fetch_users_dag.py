@@ -2,6 +2,7 @@
 
 import os
 import json
+import socket
 import requests
 from datetime import datetime, timedelta
 from airflow.decorators import dag, task
@@ -9,7 +10,14 @@ from airflow.providers.docker.operators.docker import DockerOperator
 from docker.types import Mount
 from airflow.exceptions import AirflowException
 
-AUTH_API_URL = "http://192.168.0.131:8081"
+
+s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+s.connect(("8.8.8.8", 80))
+ip = s.getsockname()[0]
+s.close()
+
+
+AUTH_API_URL = f"http://{ip}:8081"
 AUTH_API_FETCH_ALL_USERS_PATH = "/auth-api/api/v1/internal/users/get_all_users"
 
 default_args = {
