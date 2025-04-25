@@ -43,7 +43,7 @@ services:
         ipv4_address: 172.16.57.4
 
   postgres-airflow:
-    image: postgres:13
+    image: postgres:13-bullseye
     environment:
       POSTGRES_USER: airflow
       POSTGRES_PASSWORD: airflow
