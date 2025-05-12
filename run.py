@@ -57,8 +57,6 @@ GOOGLE_TO_DATA_TYPE: Dict[str, str] = {
 }
 
 
-
-
 settings = Settings()
 
 # === Настраиваем сессию с retry и актуальным CA ===
@@ -230,7 +228,7 @@ async def fetch_full_period(
                 continue
             
             url_data_type = GOOGLE_TO_DATA_TYPE.get(data_type)
-            url = f"http://localhost:8082/data-collection-api/api/v1/post_data/raw_data_google_fitness_api/{url_data_type}"
+            url = f"{settings.DATA_COLLECTION_API_BASE_URL}/data-collection-api/api/v1/post_data/raw_data_google_fitness_api/{url_data_type}"
             headers = {
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {access_token}"

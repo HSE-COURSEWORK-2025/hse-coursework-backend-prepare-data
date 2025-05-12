@@ -1,25 +1,35 @@
-# dags/fetch_all_users_and_data.py
-
 import os
 import json
-import socket
 import requests
 from datetime import datetime, timedelta
 from airflow.decorators import dag, task
 from airflow.providers.docker.operators.docker import DockerOperator
-from docker.types import Mount
 from airflow.exceptions import AirflowException
 
+# Читаем базовые URL из переменных окружения (подгружаются из .env)
+DATA_COLLECTION_API_BASE_URL = os.getenv(
+    "DATA_COLLECTION_API_BASE_URL",
+    "http://localhost:8082"
+)
+AUTH_API_BASE_URL = os.getenv(
+    "AUTH_API_BASE_URL",
+    "http://localhost:8081"
+)
+# Путь к эндпоинту для получения всех пользователей
+AUTH_API_FETCH_ALL_USERS_PATH = os.getenv(
+    "AUTH_API_FETCH_ALL_USERS_PATH",
+    "/auth-api/api/v1/internal/users/get_all_users"
+)
 
-s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-s.connect(("8.8.8.8", 80))
-ip = s.getsockname()[0]
-s.close()
+def _url(path: str) -> str:
+    """Собирает полный URL на переданный путь в нужном API"""
+    # Для других API можно расширить логику по префиксу
+    if path.startswith("/auth-api"):
+        return f"{AUTH_API_BASE_URL}{path}"
+    else:
+        return f"{DATA_COLLECTION_API_BASE_URL}{path}"
 
-
-AUTH_API_URL = f"http://{ip}:8081"
-AUTH_API_FETCH_ALL_USERS_PATH = "/auth-api/api/v1/internal/users/get_all_users"
-
+# Общие аргументы DAG
 default_args = {
     "owner": "airflow",
     "start_date": datetime(2025, 4, 1),
@@ -40,21 +50,20 @@ def fetch_all_users_and_data_dag():
     @task(retries=2)
     def fetch_users():
         """Fetch all users from the authentication API"""
+        url = _url(AUTH_API_FETCH_ALL_USERS_PATH)
         try:
-            url = f"{AUTH_API_URL}{AUTH_API_FETCH_ALL_USERS_PATH}"
             response = requests.get(url, timeout=10)
             response.raise_for_status()
             users = response.json()
-            
             if not users:
                 raise AirflowException("No users found in the response")
-                
             return users
         except requests.exceptions.RequestException as e:
-            raise AirflowException(f"API request failed: {str(e)}")
+            raise AirflowException(f"API request failed: {e}")
 
-    def _create_docker_task(user):
+    def _create_docker_task(user: dict):
         """Helper function to create DockerOperator instance"""
+        # Передаем внутрь контейнера URL через переменные окружения
         return DockerOperator(
             task_id=f"process_user_{user['email'].replace('@', '_at_')}",
             image="fetch_users:latest",
@@ -62,13 +71,15 @@ def fetch_all_users_and_data_dag():
             auto_remove=True,
             docker_url="unix://var/run/docker.sock",
             network_mode="host",
-            command=["--user-json", json.dumps(user, ensure_ascii=False)],
             environment={
+                "DATA_COLLECTION_API_BASE_URL": DATA_COLLECTION_API_BASE_URL,
+                "AUTH_API_BASE_URL": AUTH_API_BASE_URL,
                 "AIRFLOW_UID": os.getenv("AIRFLOW_UID", "0"),
-                "PYTHONUNBUFFERED": "1"
+                "PYTHONUNBUFFERED": "1",
             },
+            command=["--user-json", json.dumps(user, ensure_ascii=False)],
             mounts=[],
-            retrieve_output=True
+            retrieve_output=True,
         )
 
     @task
@@ -76,8 +87,8 @@ def fetch_all_users_and_data_dag():
         """Wrapper task for Docker operator"""
         return _create_docker_task(user).execute({})
 
-    # DAG structure
     users = fetch_users()
     process_user.expand(user=users)
+
 
 dag_instance = fetch_all_users_and_data_dag()

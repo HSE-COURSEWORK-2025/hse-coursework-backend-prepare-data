@@ -96,6 +96,9 @@ class Settings(BaseSettings):
     # START_MS: int | None = 0
     END_MS: int | None = int(time.time() * 1000)
 
+    DATA_COLLECTION_API_BASE_URL: str | None = "http://localhost:8082"
+    AUTH_API_BASE_URL: str | None = "http://localhost:8081"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
