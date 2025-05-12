@@ -3,3 +3,4 @@ pydantic-settings
 pydantic_core
 requests
 aioredis
+setuptools

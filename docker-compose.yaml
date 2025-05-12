@@ -12,6 +12,10 @@ x-airflow-common: &airflow-common
     AIRFLOW__API__AUTH_BACKENDS: "airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session"
     AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: "true"
     _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-}
+    DATA_COLLECTION_API_BASE_URL: ${DATA_COLLECTION_API_BASE_URL}
+    AUTH_API_BASE_URL: ${AUTH_API_BASE_URL}
+    AUTH_API_FETCH_ALL_USERS_PATH: "/auth-api/api/v1/internal/users/get_all_users"
+
   volumes:
     - ${AIRFLOW_PROJ_DIR:-.}/dags:/opt/airflow/dags
     - ${AIRFLOW_PROJ_DIR:-.}/docker_data/logs:/opt/airflow/logs
@@ -27,6 +31,8 @@ x-airflow-common: &airflow-common
   networks:
     airflow_network:
       ipv4_address: 172.16.57.1
+  # extra_hosts:
+  #   - "host.docker.internal:host-gateway"
 
 services:
   redis:
