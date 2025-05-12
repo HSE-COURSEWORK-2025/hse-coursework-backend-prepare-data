@@ -1,5 +1,6 @@
 """Общие настройки для приложения."""
 
+import time
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import List, Dict
@@ -19,16 +20,38 @@ class Settings(BaseSettings):
         "https://www.googleapis.com/auth/fitness.body.read",
         "https://www.googleapis.com/auth/fitness.body_temperature.read",
         "https://www.googleapis.com/auth/fitness.heart_rate.read",
-        "https://www.googleapis.com/auth/fitness.location.read",
         "https://www.googleapis.com/auth/fitness.nutrition.read",
         "https://www.googleapis.com/auth/fitness.oxygen_saturation.read",
         "https://www.googleapis.com/auth/fitness.reproductive_health.read",
         "https://www.googleapis.com/auth/fitness.sleep.read",
     ]
 
+    # SCOPES: List[str] | None = [
+    #     # "https://www.googleapis.com/auth/fitness.activity.read",
+    #     # "https://www.googleapis.com/auth/fitness.blood_glucose.read",
+    #     # "https://www.googleapis.com/auth/fitness.blood_pressure.read",
+    #     # "https://www.googleapis.com/auth/fitness.body.read",
+    #     # "https://www.googleapis.com/auth/fitness.body_temperature.read",
+    #     # "https://www.googleapis.com/auth/fitness.heart_rate.read",
+    #     # "https://www.googleapis.com/auth/fitness.nutrition.read",
+    #     # "https://www.googleapis.com/auth/fitness.oxygen_saturation.read",
+    #     # "https://www.googleapis.com/auth/fitness.reproductive_health.read",
+    #     "https://www.googleapis.com/auth/fitness.sleep.read",
+    # ]
+
     DATA_TYPES_BY_SCOPE: Dict[str, List[str]] | None = {
         "https://www.googleapis.com/auth/fitness.activity.read": [
-            "com.google.step_count.delta"
+            "com.google.activity.segment",
+            "com.google.calories.bmr",
+            "com.google.calories.expended",
+            "com.google.cycling.pedaling.cadence",
+            "com.google.cycling.pedaling.cumulative",
+            "com.google.heart_minutes",
+            "com.google.active_minutes",
+            "com.google.power.sample",
+            "com.google.step_count.cadence",
+            "com.google.step_count.delta",
+            "com.google.activity.exercise",
         ],
         "https://www.googleapis.com/auth/fitness.blood_glucose.read": [
             "com.google.blood_glucose"
@@ -47,11 +70,9 @@ class Settings(BaseSettings):
         "https://www.googleapis.com/auth/fitness.heart_rate.read": [
             "com.google.heart_rate.bpm"
         ],
-        "https://www.googleapis.com/auth/fitness.location.read": [
-            "com.google.location.sample"
-        ],
         "https://www.googleapis.com/auth/fitness.nutrition.read": [
-            "com.google.nutrition"
+            "com.google.hydration",
+            "com.google.nutrition",
         ],
         "https://www.googleapis.com/auth/fitness.oxygen_saturation.read": [
             "com.google.oxygen_saturation"
@@ -65,8 +86,15 @@ class Settings(BaseSettings):
         ],
     }
 
-    CHUNK_DURATION_MS: int | None = 30 * 24 * 60 * 60 * 1000 
+    CHUNK_DURATION_MS: int | None = 30 * 24 * 60 * 60 * 1000
 
+    REDIS_HOST: str | None = "localhost"
+    REDIS_PORT: str | None = "6379"
+    REDIS_DATA_COLLECTION_GOOGLE_FITNESS_API_PROGRESS_BAR_NAMESPACE: str | None = "REDIS_DATA_COLLECTION_GOOGLE_FITNESS_API_PROGRESS_BAR_NAMESPACE-"
+
+    START_MS: int | None = int((time.time() - 360 * 24 * 60 * 60) * 1000)
+    # START_MS: int | None = 0
+    END_MS: int | None = int(time.time() * 1000)
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -75,3 +103,6 @@ class Settings(BaseSettings):
         env_nested_delimiter="__",
         extra="ignore",  # игнорировать лишние переменные в .env
     )
+
+
+settings = Settings()
