@@ -5,3 +5,6 @@ requests
 aioredis
 setuptools
 httpx
+sqlalchemy
+numpy
+psycopg2-binary
