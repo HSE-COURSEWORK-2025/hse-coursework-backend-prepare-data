@@ -6,6 +6,6 @@ sudo rm -rf docker_data
 
 eval $(minikube docker-env)
 
-docker build -t fetch_users:latest -f dockerfile.dag .
+docker build -t find_outliers:latest -f dockerfile.dag .
 
 eval $(minikube docker-env --unset)
