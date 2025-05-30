@@ -6,6 +6,6 @@ sudo rm -rf docker_data
 
 eval $(minikube docker-env)
 
-docker build -t find_outliers:latest -f dockerfile.dag .
+docker build -t predict_using_ml:latest -f dockerfile.dag .
 
 eval $(minikube docker-env --unset)
