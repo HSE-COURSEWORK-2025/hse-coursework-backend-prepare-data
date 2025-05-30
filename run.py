@@ -157,7 +157,9 @@ if __name__ == "__main__":
         description="Run outliers detection for a given user email."
     )
     parser.add_argument(
-        "email",
+        "--email", "-e",
+        dest="email",
+        required=True,
         help="Email address of the user whose records will be processed"
     )
     args = parser.parse_args()
