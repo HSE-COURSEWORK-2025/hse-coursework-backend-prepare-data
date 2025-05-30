@@ -6,6 +6,7 @@ import numpy as np
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import func
+from sqlalchemy.orm import Session
 
 from notifications import notifications_api
 from db.schemas import RawRecords, OutliersRecords
@@ -24,7 +25,7 @@ def detect_outliers_zscore(values, threshold=3.0):
     z_scores = np.abs((arr - mean) / std)
     return z_scores > threshold
 
-async def detect_and_store_outliers(session: AsyncSession, iteration_num: int):
+async def detect_and_store_outliers(session: Session, iteration_num: int):
     # 1) читаем только записи нужного email
     result = session.execute(
         select(RawRecords)
@@ -65,7 +66,7 @@ async def detect_and_store_outliers(session: AsyncSession, iteration_num: int):
 
 async def main():
     # получаем сессию
-    session: AsyncSession = await get_session().__anext__()
+    session: Session = await get_session().__anext__()
 
     # автоматически определяем номер итерации
     result = session.execute(

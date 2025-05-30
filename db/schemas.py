@@ -42,6 +42,7 @@ class OutliersRecords(Base):
     outliers_search_iteration_num = Column(Integer, nullable=False)
     outliers_search_iteration_datetime = Column(DateTime(timezone=True), nullable=False)
 
+
     raw_record = relationship("RawRecords", backref="outlier_record", uselist=False)
 
 
