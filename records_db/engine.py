@@ -12,7 +12,7 @@ logger = logging.getLogger("database")
 
 class DbEngine:
     def __init__(self):
-        self.url = f"{settings.DB_ENGINE}://{settings.DB_USER}:{settings.DB_PASSWORD}@{settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}"
+        self.url = f"{settings.RECORDS_DB_ENGINE}://{settings.RECORDS_DB_USER}:{settings.RECORDS_DB_PASSWORD}@{settings.RECORDS_DB_HOST}:{settings.RECORDS_DB_PORT}/{settings.RECORDS_DB_NAME}"
         self.engine = create_engine(self.url, pool_pre_ping=True)
         self.session = sessionmaker(bind=self.engine)
 
@@ -32,13 +32,13 @@ class DbEngine:
                 return result
 
 
-db_engine = DbEngine()
+records_db_engine = DbEngine()
 
 
 async def db_engine_check():
-    logger.info(f"connecting to database {settings.DB_HOST}:{settings.DB_PORT}")
+    logger.info(f"connecting to database {settings.RECORDS_DB_HOST}:{settings.RECORDS_DB_PORT}")
     try:
-        version_info = db_engine.request(text("SELECT version();")).fetchone()
+        version_info = records_db_engine.request(text("SELECT version();")).fetchone()
     except Exception as e:
         logger.error(f"error connecting to database: {e}")
         raise e

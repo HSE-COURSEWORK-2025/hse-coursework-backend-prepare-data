@@ -6,6 +6,6 @@ sudo rm -rf docker_data
 
 eval $(minikube docker-env)
 
-docker build -t predict_using_ml:latest -f dockerfile.dag .
+docker build -t preprocess_data:latest -f dockerfile.dag .
 
 eval $(minikube docker-env --unset)
