@@ -4,24 +4,21 @@ import logging
 import re
 import sys
 from datetime import datetime
-import random
 
 from sqlalchemy.future import select
 from sqlalchemy import func
 
 from notifications import notifications_api
-from records_db.schemas import MLPredictionsRecords, RawRecords, ProcessedRecords
+from records_db.schemas import RawRecords, ProcessedRecords
 from records_db.db_session import get_records_db_session
 
 from settings import Settings
 from sqlalchemy.orm import Session
-from sqlalchemy import insert, select, func, cast, Numeric
+from sqlalchemy import insert, select, cast, Numeric
 
-# Настройки
 settings = Settings()
 EMAIL_REGEX = re.compile(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$")
 
-# Логирование
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -71,18 +68,17 @@ async def process_data(records_db_session: Session, email: str):
             )
             existing_id = (records_db_session.execute(exists_stmt)).scalars().first()
             if existing_id:
-                # пропускаем, если уже есть
                 continue
             stmt = insert(ProcessedRecords).values(
                 email=email,
                 data_type=data_type,
-                time=record_date,  # в вашей модели поле называется `time`
-                value=str(value_sum),  # если в модели `value` — Text, сохраняем строку
+                time=record_date,
+                value=str(value_sum),
             )
             records_db_session.execute(stmt)
         try:
             records_db_session.commit()
-        except Exception as e:
+        except Exception:
             records_db_session.rollback()
 
     speed_query = (
@@ -102,7 +98,6 @@ async def process_data(records_db_session: Session, email: str):
     speed_rows = speed_result.fetchall()
 
     for record_date, avg_speed in speed_rows:
-        # Проверяем, не записаны ли мы уже
         exists_stmt = select(ProcessedRecords.id).where(
             ProcessedRecords.email == email,
             ProcessedRecords.data_type == "SpeedRecord",
@@ -111,7 +106,6 @@ async def process_data(records_db_session: Session, email: str):
         if records_db_session.execute(exists_stmt).scalars().first():
             continue
 
-        # Вставляем среднюю скорость как новую запись
         stmt = insert(ProcessedRecords).values(
             email=email,
             data_type="SpeedRecord",
@@ -120,7 +114,6 @@ async def process_data(records_db_session: Session, email: str):
         )
         records_db_session.execute(stmt)
 
-    # Коммитим ВСЕ изменения разом
     try:
         records_db_session.commit()
     except Exception:
@@ -128,10 +121,8 @@ async def process_data(records_db_session: Session, email: str):
         raise
 
 
-async def send_preprocessing_start_notification(
-    email: str, start_time: str
-):
-    subject = f"[Data Prep Iteration] Начало предобработки данных"
+async def send_preprocessing_start_notification(email: str, start_time: str):
+    subject = "[Data Prep Iteration] Начало предобработки данных"
     body = f"""
     <html>
       <body>
@@ -149,7 +140,7 @@ async def send_preprocessing_start_notification(
 async def send_preprocessing_completion_notification(
     email: str, start_time: str, finish_time: str
 ):
-    subject = f"[Data Prep Iteration ] Завершение предобработки данных"
+    subject = "[Data Prep Iteration ] Завершение предобработки данных"
     body = f"""
     <html>
       <body>
@@ -166,9 +157,7 @@ async def send_preprocessing_completion_notification(
 
 
 async def main(email: str):
-    # Определяем итерацию
     records_db_session = await get_records_db_session().__anext__()
-
 
     start_time = datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
     try:
@@ -176,22 +165,17 @@ async def main(email: str):
     except Exception as e:
         logger.error(f"Failed to send ML start notification: {e}")
 
-    # Генерируем и сохраняем прогнозы
     await process_data(records_db_session, email)
 
     finish_time = datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
     try:
-        await send_preprocessing_completion_notification(
-            email, start_time, finish_time
-        )
+        await send_preprocessing_completion_notification(email, start_time, finish_time)
     except Exception as e:
         logger.error(f"Failed to send ML completion notification: {e}")
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Preprocess data for user."
-    )
+    parser = argparse.ArgumentParser(description="Preprocess data for user.")
     parser.add_argument(
         "--email",
         "-e",

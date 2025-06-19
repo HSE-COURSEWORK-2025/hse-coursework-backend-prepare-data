@@ -36,7 +36,9 @@ records_db_engine = DbEngine()
 
 
 async def db_engine_check():
-    logger.info(f"connecting to database {settings.RECORDS_DB_HOST}:{settings.RECORDS_DB_PORT}")
+    logger.info(
+        f"connecting to database {settings.RECORDS_DB_HOST}:{settings.RECORDS_DB_PORT}"
+    )
     try:
         version_info = records_db_engine.request(text("SELECT version();")).fetchone()
     except Exception as e:
